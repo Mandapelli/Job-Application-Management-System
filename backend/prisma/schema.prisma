@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum InterviewType {
+  PHONE
+  VIDEO
+  ONSITE
+  TECHNICAL
+  BEHAVIORAL
+  HR
+  OTHER
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum InterviewResult {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum NotificationType {
+  INTERVIEW_REMINDER
+  TASK_DUE
+  TASK_OVERDUE
+}
+
+enum DocumentType {
+  RESUME
+  COVER_LETTER
+  OTHER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Char(36)
+  name         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @db.VarChar(255)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  companies     Company[]
+  applications  JobApplication[]
+  statusChanges ApplicationStatusHistory[]
+  recruiters    Recruiter[]
+  interviews    Interview[]
+  tasks         Task[]
+  documents     Document[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Company {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  name      String   @db.VarChar(150)
+  website   String?  @db.VarChar(2048)
+  industry  String?  @db.VarChar(100)
+  location  String?  @db.VarChar(150)
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications JobApplication[]
+  recruiters   Recruiter[]
+
+  @@unique([userId, name])
+  @@map("companies")
+}
+
+model JobApplication {
+  id             String            @id @default(uuid()) @db.Char(36)
+  userId         String            @db.Char(36)
+  companyId      String?           @db.Char(36)
+  companyName    String            @db.VarChar(150)
+  jobTitle       String            @db.VarChar(150)
+  jobDescription String?           @db.Text
+  jobUrl         String?           @db.VarChar(2048)
+  location       String?           @db.VarChar(150)
+  employmentType EmploymentType?
+  workMode       WorkMode?
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String            @default("USD") @db.VarChar(3)
+  appliedDate    DateTime?         @db.Date
+  status         ApplicationStatus @default(WISHLIST)
+
+  // Optional link to a saved recruiter. The inline fields below are a copy of the recruiter's details
+  // (kept in sync while linked; kept as-is if the recruiter is later deleted).
+  recruiterId    String? @db.Char(36)
+  recruiterName  String? @db.VarChar(100)
+  recruiterEmail String? @db.VarChar(255)
+  recruiterPhone String? @db.VarChar(30)
+
+  // Reference to a future Documents table (no FK until that module exists).
+  resumeId String? @db.Char(36)
+
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company       Company?                   @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  recruiter     Recruiter?                 @relation(fields: [recruiterId], references: [id], onDelete: SetNull)
+  statusHistory ApplicationStatusHistory[]
+  interviews    Interview[]
+  tasks         Task[]
+  documents     ApplicationDocument[]
+
+  @@index([recruiterId])
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([userId, appliedDate])
+  @@index([userId, companyName])
+  @@index([companyId])
+  @@map("job_applications")
+}
+
+model Recruiter {
+  id          String   @id @default(uuid()) @db.Char(36)
+  userId      String   @db.Char(36)
+  companyId   String?  @db.Char(36)
+  name        String   @db.VarChar(100)
+  title       String?  @db.VarChar(100)
+  email       String?  @db.VarChar(255)
+  phone       String?  @db.VarChar(30)
+  linkedinUrl String?  @db.VarChar(2048)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company      Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  applications JobApplication[]
+
+  @@index([userId, name])
+  @@index([companyId])
+  @@map("recruiters")
+}
+
+model Interview {
+  id              String          @id @default(uuid()) @db.Char(36)
+  userId          String          @db.Char(36)
+  applicationId   String          @db.Char(36)
+  round           Int             @default(1)
+  type            InterviewType   @default(VIDEO)
+  scheduledAt     DateTime
+  durationMinutes Int             @default(60)
+  location        String?         @db.VarChar(255)
+  meetingUrl      String?         @db.VarChar(2048)
+  interviewerName String?         @db.VarChar(100)
+  status          InterviewStatus @default(SCHEDULED)
+  result          InterviewResult @default(PENDING)
+  feedback        String?         @db.Text
+  notes           String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  notifications Notification[]
+
+  // (status, scheduledAt) lets the reminder job find upcoming interviews across all users quickly.
+  @@index([status, scheduledAt])
+  @@index([userId, scheduledAt])
+  @@index([applicationId, scheduledAt])
+  @@index([userId, status])
+  @@map("interviews")
+}
+
+// An in-app notification. Reminders are created by the background job; `dedupeKey` makes sure the same
+// reminder (e.g. "interview X, 24 hours before") can only ever be created once per user.
+model Notification {
+  id          String           @id @default(uuid()) @db.Char(36)
+  userId      String           @db.Char(36)
+  type        NotificationType
+  title       String           @db.VarChar(200)
+  message     String           @db.VarChar(500)
+  link        String?          @db.VarChar(255) // in-app path to open, e.g. /interviews/<id>
+  eventAt     DateTime? // when the interview happens / the task is due
+  dedupeKey   String           @db.VarChar(255)
+  interviewId String?          @db.Char(36)
+  taskId      String?          @db.Char(36)
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Deleting the interview/task removes its notifications too.
+  interview Interview? @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  task      Task?      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt])
+  @@index([interviewId])
+  @@index([taskId])
+  @@map("notifications")
+}
+
+// An uploaded file. The bytes live in file storage under `storageKey` (a random name chosen by the server,
+// never the uploaded name); this row holds the metadata.
+model Document {
+  id          String       @id @default(uuid()) @db.Char(36)
+  userId      String       @db.Char(36)
+  name        String       @db.VarChar(255) // display name, editable
+  fileName    String       @db.VarChar(255) // sanitized original file name, used for downloads
+  mimeType    String       @db.VarChar(100) // determined from the file content, not from the upload
+  sizeBytes   Int
+  storageKey  String       @unique @db.VarChar(255)
+  type        DocumentType @default(RESUME)
+  description String?      @db.VarChar(1000)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications ApplicationDocument[]
+
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@map("documents")
+}
+
+// Which documents are attached to which applications (a resume can be reused across many applications).
+model ApplicationDocument {
+  applicationId String   @db.Char(36)
+  documentId    String   @db.Char(36)
+  createdAt     DateTime @default(now())
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  document    Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@id([applicationId, documentId])
+  @@index([documentId])
+  @@map("application_documents")
+}
+
+// "Overdue" is not stored: it is a pending task whose dueAt has passed, worked out when queried.
+model Task {
+  id            String       @id @default(uuid()) @db.Char(36)
+  userId        String       @db.Char(36)
+  applicationId String?      @db.Char(36)
+  title         String       @db.VarChar(200)
+  description   String?      @db.Text
+  dueAt         DateTime?
+  priority      TaskPriority @default(MEDIUM)
+  status        TaskStatus   @default(PENDING)
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application JobApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  notifications Notification[]
+
+  // (status, dueAt) lets the reminder job find due and overdue tasks across all users quickly.
+  @@index([status, dueAt])
+  @@index([userId, status, dueAt])
+  @@index([applicationId])
+  @@map("tasks")
+}
+
+model ApplicationStatusHistory {
+  id            String             @id @default(uuid()) @db.Char(36)
+  applicationId String             @db.Char(36)
+  userId        String             @db.Char(36)
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  changedAt     DateTime           @default(now())
+
+  application JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, changedAt])
+  @@index([userId])
+  @@map("application_status_history")
+}

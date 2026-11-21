@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Light theme (default). Colors are "H S% L%" so Tailwind can add opacity, e.g. bg-primary/10. */
+  :root {
+    color-scheme: light; /* native controls (date pickers, scrollbars) follow the theme too */
+
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 42%; /* 4.5:1 or better on white and on the light gray panels */
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 72% 51%; /* 4.8:1 against white, both as text and as a button fill */
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 243 75% 59%;
+    --radius: 0.5rem;
+
+    /* Chart tokens. --chart-1 passed the dataviz palette validator (lightness, chroma, 3:1 contrast on the surface). */
+    --chart-1: #2a78d6;
+    --chart-grid: #e7e7e4;
+    --chart-axis: #52514e;
+    --chart-cursor: rgba(0, 0, 0, 0.04);
+  }
+
+  /* Dark theme: applied when <html> has class "dark" (see ThemeProvider). */
+  .dark {
+    color-scheme: dark;
+
+    --background: 224 25% 8%;
+    --foreground: 210 20% 96%;
+    --card: 224 22% 11%;
+    --card-foreground: 210 20% 96%;
+    /* A lighter indigo with dark text on it keeps buttons and links readable on the dark background. */
+    --primary: 243 90% 74%;
+    --primary-foreground: 224 25% 8%;
+    --secondary: 224 16% 18%;
+    --secondary-foreground: 210 20% 96%;
+    --muted: 224 16% 17%;
+    --muted-foreground: 215 16% 66%;
+    --accent: 224 16% 19%;
+    --accent-foreground: 210 20% 96%;
+    --destructive: 0 80% 62%;
+    --destructive-foreground: 224 25% 8%;
+    --border: 224 14% 23%;
+    --input: 224 14% 25%;
+    --ring: 243 90% 74%;
+
+    /* --chart-1 is the dark step of the same blue; validated against the dark card surface (#161922). */
+    --chart-1: #3987e5;
+    --chart-grid: #2a2e3a;
+    --chart-axis: #b4b9c6;
+    --chart-cursor: rgba(255, 255, 255, 0.07);
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
