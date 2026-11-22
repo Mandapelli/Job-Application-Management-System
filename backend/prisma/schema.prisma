@@ -91,6 +91,11 @@ model User {
   tasks         Task[]
   documents     Document[]
   notifications Notification[]
+  passwordResets PasswordResetToken[]
+
+  // Set whenever the password changes. Login tokens issued before this moment stop working,
+  // so changing or resetting a password also signs out every other device.
+  passwordChangedAt DateTime?
 
   @@map("users")
 }
@@ -213,6 +218,23 @@ model Interview {
   @@index([applicationId, scheduledAt])
   @@index([userId, status])
   @@map("interviews")
+}
+
+// A "forgot password" link. Only a SHA-256 hash of the secret is stored, so a leaked database can't be used to reset
+// anyone's password. Links expire, work once, and a new request replaces any older one.
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Char(36)
+  userId    String    @db.Char(36)
+  tokenHash String    @unique @db.Char(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 // An in-app notification. Reminders are created by the background job; `dedupeKey` makes sure the same

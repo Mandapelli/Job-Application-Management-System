@@ -1,4 +1,5 @@
 import { env } from '../config/env.js';
+import { passwordResetRepository } from '../repositories/passwordReset.repository.js';
 import { notificationService } from '../services/notification.service.js';
 
 const PURGE_EVERY_MS = 6 * 60 * 60 * 1000;
@@ -27,6 +28,8 @@ export function startNotificationScheduler(): () => void {
       if (Date.now() - lastPurge > PURGE_EVERY_MS) {
         lastPurge = Date.now();
         await notificationService.purgeOld();
+        // Password-reset links that expired more than a day ago are no longer needed.
+        await passwordResetRepository.purgeExpiredBefore(new Date(Date.now() - 24 * 60 * 60 * 1000));
       }
     } catch (error) {
       console.error('Reminder job failed (will retry on the next run):', error);

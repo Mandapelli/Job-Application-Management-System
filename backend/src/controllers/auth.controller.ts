@@ -23,4 +23,20 @@ export const authController = {
   logout: asyncHandler(async (_req, res) => {
     sendSuccess(res, null, { message: 'Logged out successfully' });
   }),
+
+  changePassword: asyncHandler(async (req, res) => {
+    const result = await authService.changePassword(req.user!.id, req.body);
+    sendSuccess(res, result, { message: 'Password changed. Other devices have been signed out.' });
+  }),
+
+  // Always the same answer, whether or not the email has an account.
+  forgotPassword: asyncHandler(async (req, res) => {
+    await authService.forgotPassword(req.body);
+    sendSuccess(res, null, { message: 'If an account exists for that email, a reset link has been sent.' });
+  }),
+
+  resetPassword: asyncHandler(async (req, res) => {
+    await authService.resetPassword(req.body);
+    sendSuccess(res, null, { message: 'Password updated. You can now log in.' });
+  }),
 };

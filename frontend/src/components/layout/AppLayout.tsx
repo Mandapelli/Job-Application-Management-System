@@ -8,6 +8,7 @@ import {
   ListTodo,
   LogOut,
   Menu,
+  Settings,
   Users,
   X,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { to: '/interviews', label: 'Interviews', icon: CalendarDays },
   { to: '/tasks', label: 'Tasks', icon: ListTodo },
   { to: '/documents', label: 'Documents', icon: FileText },
+  { to: '/account', label: 'Account', icon: Settings },
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {

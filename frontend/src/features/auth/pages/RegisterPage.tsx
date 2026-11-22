@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { applyFieldErrors, getErrorMessage } from '@/lib/apiError';
 import { useAuth } from '../AuthContext';
 import { AuthLayout } from '../AuthLayout';
@@ -54,7 +55,7 @@ export function RegisterPage() {
           <Input id="email" type="email" autoComplete="email" aria-invalid={!!errors.email} {...register('email')} />
         </FormField>
         <FormField label="Password" htmlFor="password" error={errors.password?.message}>
-          <Input id="password" type="password" autoComplete="new-password" aria-invalid={!!errors.password} {...register('password')} />
+          <PasswordInput id="password" autoComplete="new-password" aria-invalid={!!errors.password} {...register('password')} />
         </FormField>
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}

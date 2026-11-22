@@ -57,6 +57,9 @@ const NotificationsPage = page(
   () => import('@/features/notifications/pages/NotificationsPage'),
   'NotificationsPage',
 );
+const ForgotPasswordPage = page(() => import('@/features/auth/pages/ForgotPasswordPage'), 'ForgotPasswordPage');
+const ResetPasswordPage = page(() => import('@/features/auth/pages/ResetPasswordPage'), 'ResetPasswordPage');
+const AccountPage = page(() => import('@/features/auth/pages/AccountPage'), 'AccountPage');
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
 );
@@ -65,6 +68,10 @@ const withSuspense = (node: ReactNode) => <Suspense fallback={<PageSpinner />}>{
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/dashboard" replace /> },
+  // Open to everyone, signed in or not: someone who forgot their password is by definition not signed in,
+  // and a signed-in user opening a reset link from their email must still be able to use it.
+  { path: '/forgot-password', element: withSuspense(<ForgotPasswordPage />) },
+  { path: '/reset-password', element: withSuspense(<ResetPasswordPage />) },
   {
     element: <GuestRoute />,
     children: [
@@ -102,6 +109,7 @@ export const router = createBrowserRouter([
           { path: '/documents/new', element: <NewDocumentPage /> },
           { path: '/documents/:id/edit', element: <EditDocumentPage /> },
           { path: '/notifications', element: <NotificationsPage /> },
+          { path: '/account', element: <AccountPage /> },
         ],
       },
     ],
